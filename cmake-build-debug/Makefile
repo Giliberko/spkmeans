@@ -142,6 +142,33 @@ spkmeans/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\spkmeans.dir\build.make CMakeFiles/spkmeans.dir/build
 .PHONY : spkmeans/fast
 
+main.obj: main.c.obj
+
+.PHONY : main.obj
+
+# target to build an object file
+main.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spkmeans.dir\build.make CMakeFiles/spkmeans.dir/main.c.obj
+.PHONY : main.c.obj
+
+main.i: main.c.i
+
+.PHONY : main.i
+
+# target to preprocess a source file
+main.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spkmeans.dir\build.make CMakeFiles/spkmeans.dir/main.c.i
+.PHONY : main.c.i
+
+main.s: main.c.s
+
+.PHONY : main.s
+
+# target to generate assembly for a file
+main.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spkmeans.dir\build.make CMakeFiles/spkmeans.dir/main.c.s
+.PHONY : main.c.s
+
 spkmeans.obj: spkmeans.c.obj
 
 .PHONY : spkmeans.obj
@@ -178,6 +205,9 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... spkmeans
+	@echo ... main.obj
+	@echo ... main.i
+	@echo ... main.s
 	@echo ... spkmeans.obj
 	@echo ... spkmeans.i
 	@echo ... spkmeans.s

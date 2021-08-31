@@ -89,17 +89,32 @@ CMakeFiles/spkmeans.dir/spkmeans.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/spkmeans.dir/spkmeans.c.s"
 	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:\Users\gilib\CLionProjects\spkmeans\spkmeans.c -o CMakeFiles\spkmeans.dir\spkmeans.c.s
 
+CMakeFiles/spkmeans.dir/main.c.obj: CMakeFiles/spkmeans.dir/flags.make
+CMakeFiles/spkmeans.dir/main.c.obj: ../main.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=C:\Users\gilib\CLionProjects\spkmeans\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/spkmeans.dir/main.c.obj"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles\spkmeans.dir\main.c.obj   -c C:\Users\gilib\CLionProjects\spkmeans\main.c
+
+CMakeFiles/spkmeans.dir/main.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/spkmeans.dir/main.c.i"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E C:\Users\gilib\CLionProjects\spkmeans\main.c > CMakeFiles\spkmeans.dir\main.c.i
+
+CMakeFiles/spkmeans.dir/main.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/spkmeans.dir/main.c.s"
+	C:\PROGRA~2\MINGW-~1\I686-8~1.0-P\mingw32\bin\gcc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S C:\Users\gilib\CLionProjects\spkmeans\main.c -o CMakeFiles\spkmeans.dir\main.c.s
+
 # Object files for target spkmeans
 spkmeans_OBJECTS = \
-"CMakeFiles/spkmeans.dir/spkmeans.c.obj"
+"CMakeFiles/spkmeans.dir/spkmeans.c.obj" \
+"CMakeFiles/spkmeans.dir/main.c.obj"
 
 # External object files for target spkmeans
 spkmeans_EXTERNAL_OBJECTS =
 
 libspkmeans.a: CMakeFiles/spkmeans.dir/spkmeans.c.obj
+libspkmeans.a: CMakeFiles/spkmeans.dir/main.c.obj
 libspkmeans.a: CMakeFiles/spkmeans.dir/build.make
 libspkmeans.a: CMakeFiles/spkmeans.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=C:\Users\gilib\CLionProjects\spkmeans\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C static library libspkmeans.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=C:\Users\gilib\CLionProjects\spkmeans\cmake-build-debug\CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking C static library libspkmeans.a"
 	$(CMAKE_COMMAND) -P CMakeFiles\spkmeans.dir\cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\spkmeans.dir\link.txt --verbose=$(VERBOSE)
 

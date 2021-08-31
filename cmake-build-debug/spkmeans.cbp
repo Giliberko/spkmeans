@@ -74,6 +74,12 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="C:/Users/gilib/CLionProjects/spkmeans/main.c">
+			<Option target="spkmeans"/>
+		</Unit>
+		<Unit filename="C:/Users/gilib/CLionProjects/spkmeans/main.h">
+			<Option target="spkmeans"/>
+		</Unit>
 		<Unit filename="C:/Users/gilib/CLionProjects/spkmeans/spkmeans.c">
 			<Option target="spkmeans"/>
 		</Unit>

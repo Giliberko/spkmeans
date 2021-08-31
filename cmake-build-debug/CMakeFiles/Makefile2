@@ -93,12 +93,12 @@ clean: CMakeFiles/spkmeans.dir/clean
 CMakeFiles/spkmeans.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\spkmeans.dir\build.make CMakeFiles/spkmeans.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\spkmeans.dir\build.make CMakeFiles/spkmeans.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=C:\Users\gilib\CLionProjects\spkmeans\cmake-build-debug\CMakeFiles --progress-num=1,2 "Built target spkmeans"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=C:\Users\gilib\CLionProjects\spkmeans\cmake-build-debug\CMakeFiles --progress-num=1,2,3 "Built target spkmeans"
 .PHONY : CMakeFiles/spkmeans.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/spkmeans.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start C:\Users\gilib\CLionProjects\spkmeans\cmake-build-debug\CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\Users\gilib\CLionProjects\spkmeans\cmake-build-debug\CMakeFiles 3
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/spkmeans.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start C:\Users\gilib\CLionProjects\spkmeans\cmake-build-debug\CMakeFiles 0
 .PHONY : CMakeFiles/spkmeans.dir/rule

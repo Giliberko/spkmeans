@@ -4,6 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
+  "C:/Users/gilib/CLionProjects/spkmeans/main.c" "C:/Users/gilib/CLionProjects/spkmeans/cmake-build-debug/CMakeFiles/spkmeans.dir/main.c.obj"
   "C:/Users/gilib/CLionProjects/spkmeans/spkmeans.c" "C:/Users/gilib/CLionProjects/spkmeans/cmake-build-debug/CMakeFiles/spkmeans.dir/spkmeans.c.obj"
   )
 set(CMAKE_C_COMPILER_ID "GNU")

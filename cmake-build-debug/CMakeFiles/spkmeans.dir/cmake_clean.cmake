@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/spkmeans.dir/main.c.obj"
   "CMakeFiles/spkmeans.dir/spkmeans.c.obj"
   "libspkmeans.a"
   "libspkmeans.pdb"
