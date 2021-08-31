@@ -1,0 +1,3 @@
+C:/Users/gilib/CLionProjects/spkmeans/cmake-build-debug/CMakeFiles/spkmeans.dir
+C:/Users/gilib/CLionProjects/spkmeans/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/gilib/CLionProjects/spkmeans/cmake-build-debug/CMakeFiles/rebuild_cache.dir
