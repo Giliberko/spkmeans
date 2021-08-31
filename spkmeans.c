@@ -35,10 +35,14 @@ static void returnToIdentity(double ** P, int i, int j);
 static double ** jacobi(double ** Lnorm);
 static double frobeniusNormCalc(double ** mat);
 static int convergence(double ** A, double ** curA);
+static double * extractEigenValues(double ** mat);
+static void swap(double *xp, double *yp);
+static void bubbleSort(double * vector);
+static double calcNorm(double * vector);
+static double ** renormalize(double ** U, int k);
 
 
-
-int n, D;
+    int n, D;
 
 int isInteger(char* number)
 {
@@ -338,6 +342,7 @@ double ** jacobi(double ** Lnorm){
     double ** A, ** curA, ** P, ** V;
     double theta, t, c, s;
     int maxI, maxJ, * maxInd, ind, isConvergence;
+    double * X;
 
     A = initMat();
     curA = initMat();
@@ -376,6 +381,15 @@ double ** jacobi(double ** Lnorm){
     printMat(A);
     printf("%s", "num of iter");
     printf("%d", ind);
+    X=extractEigenValues(A);
+    printf("%s", "X");
+    printDiagonal(X);
+    printf("\n");
+    bubbleSort(X);
+    printDiagonal(X);
+
+
+
     return V;
 }
 
@@ -487,43 +501,6 @@ void buildCurA(double ** curA, double ** A, int i, int j, double c, double s){
     curA[j][i] = 0;
 
 
-    /** for (l = 0; l < n; l++){
-        for (k = 0; k < n; k++){
-            if (l == i){
-                if (k == i){
-                    curA[l][k] = (pow(c, 2) * A[i][i]) + (pow(s, 2) * A[j][j]) - (2 * s * c * A[i][j]);
-                }
-                else if (k == j){
-                    curA[l][k] = 0;
-                }
-                else{
-                    curA[l][k] = A[l][k];
-                }
-            }
-            else if (l == j){
-                if (k == j){
-                    curA[l][k] = (pow(s, 2) * A[i][i]) + (pow(c, 2) * A[j][j]) + (2 * s * c * A[i][j]);
-                }
-                else if (k == i){
-                    curA[l][k] = 0;
-                }
-                else {
-                    curA[l][k] = A[l][k];
-                }
-            }
-            else if (k == i){
-                curA[l][k] = (c * A[l][k]) - (s * A[l][j]);
-            }
-            else if (k == j){
-                curA[l][k] = (c * A[l][k]) + (s * A[l][i]);
-            }
-            else{
-                curA[l][k] = A[l][k];
-            }
-        }
-    }
-     **/
-
     /**
     printf("%s", "curA");
     printf("\n");
@@ -584,4 +561,119 @@ double frobeniusNormCalc(double ** mat){
     return pow(res, 2);
 }
 
+double * extractEigenValues(double ** mat){
+    double * eigenValues;
+    int i;
+    eigenValues = (double *) calloc(n , sizeof(double));
+    assert(eigenValues != NULL && "Error in allocating memory!");
+
+    for (i = 0; i < n; i++){
+        eigenValues[i] = mat[i][i];
+    }
+
+    return eigenValues;
+}
+
+void swap(double *xp, double *yp)
+{
+    double temp = *xp;
+    *xp = *yp;
+    *yp = temp;
+}
+
+
+void bubbleSort(double * vector)
+{
+    int i, j;
+    for (i = 0; i < n-1; i++)
+        for (j = 0; j < n-i-1; j++)
+            if (vector[j] > vector[j+1])
+                swap(&vector[j], &vector[j+1]);
+}
+
+
+int eigengapHeuristic(double ** A){
+    double * eigenValuesVector;
+    double delta, maxDelta;
+    int k, i;
+    eigenValuesVector = extractEigenValues(A);
+    bubbleSort(eigenValuesVector);
+
+    maxDelta = fabs(eigenValuesVector[0] - eigenValuesVector[1]);
+    k = 1;
+
+    for (i = 1; i < n/2 ; i++){
+        delta = fabs(eigenValuesVector[1] - eigenValuesVector[2]);
+        if (delta > maxDelta){
+            k = i + 1;
+            maxDelta = delta;
+        }
+    }
+
+    return k;
+}
+
+double ** extractKEigenVectors(double ** V, int k){
+    double ** U;
+    int i, j;
+
+    U = (double **) calloc(n, sizeof(double *));
+    assert(U != NULL && "Error in allocating memory!");
+
+    for (i = 0; i < n; i++){
+        U[i] = (double *) calloc(k , sizeof(double));
+        assert(U[i] != NULL && "Error in allocating memory!");
+    }
+
+    for (i = 0; i < n; i++){
+        for (j = 0; j < k; j++){
+            U[i][j] = V[i][j];
+        }
+    }
+
+    return U;
+}
+
+double ** renormalize(double ** U, int k){
+    double * curVector;
+    double curNorm;
+    double ** T;
+    int i, j;
+
+    T = (double **) calloc(n, sizeof(double *));
+    assert(T != NULL && "Error in allocating memory!");
+
+    for (i = 0; i < n; i++){
+        T[i] = (double *) calloc(k , sizeof(double));
+        assert(T[i] != NULL && "Error in allocating memory!");
+    }
+
+    curVector = (double *) calloc(n , sizeof(double));
+    assert(curVector != NULL && "Error in allocating memory!");
+
+    for (i = 0; i < n; i++){
+        for (j = 0; j < k; j++){
+            curVector[j] = U[i][j];
+        }
+        curNorm = calcNorm(curVector);
+        for (j = 0; j < k; j++){
+            T[i][j] =  U[i][j]/curNorm;
+        }
+    }
+
+    return T;
+}
+
+double calcNorm(double * vector){
+    double res;
+    int i;
+
+    res = 0;
+
+    for (i = 0; i < n; i++){
+        res += pow(vector[i], 2);
+    }
+
+    return sqrt(res);
+}
 
