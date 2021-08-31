@@ -114,14 +114,29 @@ int main(int argc, char* argv[])
     }
 
     wam = buildWam(vectors);
+    printf("%s", "wam");
+    printf("\n");
+
     printMat(wam);
     ddg = buildDdg(wam);
+
+    printf("%s", "ddg");
+    printf("\n");
     printDiagonal(ddg);
+
     sqrtDdg = buildDdgSqrt(ddg);
+    printf("%s", "sqrtddg");
+    printf("\n");
     printDiagonal(sqrtDdg);
+
     Lnorm = buildLnorm(wam, sqrtDdg);
+    printf("%s", "Lnorm");
+    printf("\n");
     printMat(Lnorm);
+
     V = jacobi(Lnorm);
+    printf("%s", "V");
+    printf("\n");
     printMat(V);
 
     freeAll(vectors, n);
@@ -328,7 +343,7 @@ double ** jacobi(double ** Lnorm){
     copyMat(Lnorm, A);
     ind = 0;
 
-    while (ind < 82){ /** add OR **/
+    while (ind < 10){ /** add OR **/
         maxInd = findMaxAbsValInd(A);
         maxI = maxInd[0];
         maxJ = maxInd[1];
@@ -346,9 +361,12 @@ double ** jacobi(double ** Lnorm){
             calcV(V, maxI, maxJ, c, s);
         }
         returnToIdentity(P, maxI, maxJ);
+
         ind += 1;
     }
-
+    printf("%s", "A");
+    printf("\n");
+    printMat(A);
     return V;
 }
 
@@ -364,6 +382,7 @@ int * findMaxAbsValInd(double ** A){
                 if (fabs(A[i][j]) > maxAbs){
                     maxInd[0] = i;
                     maxInd[1] = j;
+                    maxAbs=fabs(A[i][j]);
                 }
             }
         }
@@ -435,6 +454,11 @@ void returnToIdentity(double ** P, int i, int j){
 
 void buildCurA(double ** curA, double ** A, int i, int j, double c, double s){
     int l, k;
+
+    printf("%s", "curA before changes");
+    printf("\n");
+    printMat(curA);
+
     for (l = 0; l < n; l++){
         for (k = 0; k < n; k++){
             if (l == i){
@@ -452,6 +476,9 @@ void buildCurA(double ** curA, double ** A, int i, int j, double c, double s){
                 if (k == j){
                     curA[l][k] = (pow(s, 2) * A[i][i]) + (pow(c, 2) * A[j][j]) + (2 * s * c * A[i][j]);
                 }
+                else if (k == i){
+                    curA[l][k] = 0;
+                }
                 else {
                     curA[l][k] = A[l][k];
                 }
@@ -467,6 +494,10 @@ void buildCurA(double ** curA, double ** A, int i, int j, double c, double s){
             }
         }
     }
+
+    printf("%s", "curA");
+    printf("\n");
+    printMat(curA);
 }
 
 void calcV(double ** V, int i, int j, double c, double s){
