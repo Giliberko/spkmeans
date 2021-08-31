@@ -6,6 +6,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#define epsilon 1.0e-15
+
 static double ** scanInput();
 static double ** buildWam(double ** vectors);
 static double euclideanNormCalc (double * first, double * second);
@@ -31,10 +33,12 @@ static void calcV(double ** V, int i, int j, double c, double s);
 static double ** initIdentityMat();
 static void returnToIdentity(double ** P, int i, int j);
 static double ** jacobi(double ** Lnorm);
+static double frobeniusNormCalc(double ** mat);
+static int convergence(double ** A, double ** curA);
 
 
 
-    int n, D;
+int n, D;
 
 int isInteger(char* number)
 {
@@ -333,7 +337,7 @@ double ** jacobi(double ** Lnorm){
 
     double ** A, ** curA, ** P, ** V;
     double theta, t, c, s;
-    int maxI, maxJ, * maxInd, ind;
+    int maxI, maxJ, * maxInd, ind, isConvergence;
 
     A = initMat();
     curA = initMat();
@@ -342,8 +346,9 @@ double ** jacobi(double ** Lnorm){
 
     copyMat(Lnorm, A);
     ind = 0;
+    isConvergence = 1;
 
-    while (ind < 10){ /** add OR **/
+    while (ind < 100 && isConvergence){
         maxInd = findMaxAbsValInd(A);
         maxI = maxInd[0];
         maxJ = maxInd[1];
@@ -353,6 +358,7 @@ double ** jacobi(double ** Lnorm){
         s = t * c;
         buildRotationMat(P, maxI, maxJ, c, s);
         buildCurA(curA, A, maxI, maxJ, c, s);
+        isConvergence = convergence(A, curA);
         copyMat(curA, A);
         if (ind == 0){
             copyMat(P, V);
@@ -364,9 +370,12 @@ double ** jacobi(double ** Lnorm){
 
         ind += 1;
     }
+
     printf("%s", "A");
     printf("\n");
     printMat(A);
+    printf("%s", "num of iter");
+    printf("%d", ind);
     return V;
 }
 
@@ -453,13 +462,32 @@ void returnToIdentity(double ** P, int i, int j){
 }
 
 void buildCurA(double ** curA, double ** A, int i, int j, double c, double s){
-    int l, k;
+    int l;
+
+    /**
 
     printf("%s", "curA before changes");
     printf("\n");
     printMat(curA);
 
+     **/
+
+    copyMat(A, curA);
+
     for (l = 0; l < n; l++){
+        curA[l][i] = (c * A[l][i]) - (s * A[l][j]);
+        curA[l][j] = (c * A[l][j]) - (s * A[l][i]);
+        curA[i][l] = curA[l][i];
+        curA[j][l] = curA[l][j];
+    }
+
+    curA[i][i] = (pow(c, 2) * A[i][i]) + (pow(s, 2) * A[j][j]) - (2 * s * c * A[i][j]);
+    curA[j][j] = (pow(s, 2) * A[i][i]) + (pow(c, 2) * A[j][j]) + (2 * s * c * A[i][j]);
+    curA[i][j] = 0;
+    curA[j][i] = 0;
+
+
+    /** for (l = 0; l < n; l++){
         for (k = 0; k < n; k++){
             if (l == i){
                 if (k == i){
@@ -494,17 +522,22 @@ void buildCurA(double ** curA, double ** A, int i, int j, double c, double s){
             }
         }
     }
+     **/
 
+    /**
     printf("%s", "curA");
     printf("\n");
     printMat(curA);
+     **/
 }
 
 void calcV(double ** V, int i, int j, double c, double s){
     int l;
+    double tmp;
     for (l = 0; l < n; l++){
+        tmp = V[l][i];
         V[l][i] = (c * V[l][i]) - (s * V[l][j]);
-        V[l][j] = (c * V[l][j]) + (s * V[l][i]);
+        V[l][j] = (c * V[l][j]) + (s * tmp);
     }
 }
 
@@ -517,6 +550,38 @@ void copyMat(double ** orig, double ** dst){
     }
 }
 
+int convergence(double ** A, double ** curA){
+    int i;
+    double resA, resCurA, diff;
 
+    resA = frobeniusNormCalc(A);
+    resCurA = frobeniusNormCalc(curA);
+
+    for (i = 0; i < n; i++) {
+        resA -= pow(A[i][i], 2);
+        resCurA -= pow(curA[i][i], 2);
+    }
+
+    diff = resA - resCurA;
+    if (diff <= epsilon){
+        return 0;
+    }
+    else{
+        return 1;
+    }
+}
+
+double frobeniusNormCalc(double ** mat){
+    int i, j;
+    double res;
+    res = 0;
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            res += pow(mat[i][j], 2);
+        }
+    }
+    return pow(res, 2);
+}
 
 
