@@ -7,17 +7,17 @@
 #include <ctype.h>
 
 #define epsilon 1.0e-15
-#define errorMsg "An Error Has Occured"
+#define errorMsg "An Error Has Occured" /** TODO: replace all error msgs with this **/
 #define inputMsg "Invalid Input!"
 
 static double ** scanInput(char * fileName);
 static double ** buildWam(double ** vectors);
 static double euclideanNormCalc (double * first, double * second);
 static double weightCalc (double res);
-static void printMat(double ** mat);
+static void printMat(double ** mat, int r, int c);
 static void freeAll(double ** array, int k);
 static double * buildDdg(double ** vectors);
-/** static void printDiagonal(double * diag);**/
+static void printDiagonal(double * diag);
 static double * buildDdgSqrt(double * ddg);
 static void multiplyDiag(double ** res, double ** mat, double * diag, int flag);
 static void IReduce(double ** mat);
@@ -26,21 +26,29 @@ static int * findMaxAbsValInd(double ** A);
 static double calcTheta(double Ajj, double Aii, double Aij);
 static double calcT(double theta);
 static double calcC(double t);
-static double ** initMat();
+static double ** initMat(int r, int c);
 static void buildRotationMat(double ** mat, int i, int j, double c, double s);
 static void buildCurA(double ** curA, double ** A, int i, int j, double c, double s);
 static void copyMat(double ** orig, double ** dst);
 static void calcV(double ** V, int i, int j, double c, double s);
 static double ** initIdentityMat();
 static void returnToIdentity(double ** P, int i, int j);
-static double ** jacobi(double ** Lnorm);
+static double ** jacobiAlg(double ** Lnorm);
 static double frobeniusNormCalc(double ** mat);
 static int convergence(double ** A, double ** curA);
 static double * extractEigenValues(double ** mat);
 static void swap(double *xp, double *yp);
 static void bubbleSort(double * vector);
-static double calcNorm(double * vector);
-/** static double ** renormalize(double ** U, int k); **/
+static double calcNorm(double * vector, int k);
+static double ** renormalize(double ** U, int k);
+static double ** combineAllEigen(double ** mat, double * vector);
+static double ** separateVectors(double ** combined);
+static double * separateValues(double ** combined);
+static int eigenGapHeuristic(double * eigenValuesVector);
+static double ** extractKEigenVectors(double ** V, int k);
+static double * ddg(double ** inputMat);
+static double ** transpose(double ** mat);
+static double ** jacobi(double ** inputMat);
 
 
 int n, D;
@@ -55,12 +63,12 @@ void freeAll(double ** array, int k){
     free(array);
 }
 
-void printMat(double ** mat){
+void printMat(double ** mat, int r, int c){
     int i, j;
-    for (i = 0; i < n; i++){
-        for (j = 0; j < n; j++){
+    for (i = 0; i < r; i++){
+        for (j = 0; j < c; j++){
             printf("%.4f", mat[i][j]);
-            if(j < (n-1)){
+            if(j < (c-1)){
                 printf(",");
             }
         }
@@ -68,7 +76,8 @@ void printMat(double ** mat){
     }
 }
 
-/** void printDiagonal(double * diag){
+
+void printDiagonal(double * diag){
     int i, j;
     for (i = 0; i < n; i++){
         for (j = 0; j < n; j++){
@@ -85,56 +94,150 @@ void printMat(double ** mat){
         printf("\n");
     }
 }
- **/
+
+
+double * separateValues(double ** combined){
+    double * vector;
+    int j;
+    vector = (double *) calloc(n , sizeof(double));
+    assert(vector != NULL && errorMsg);
+    for (j = 0; j < n; j++){
+        vector[j] = combined[0][j];
+    }
+
+    printf("%s", "seperateValues func =");
+    printDiagonal(vector);
+    printf("\n");
+
+    return vector;
+}
+
+double ** separateVectors(double ** combined){
+    double ** vectorsMat;
+    int i, j;
+    vectorsMat = initMat(n, n);
+    for (i = 1; i < n + 1; i++){
+        for (j = 0; j < n; j++){
+            vectorsMat[i - 1][j] = combined[i][j];
+        }
+    }
+
+    printf("%s", "seperateVectors func =");
+    printMat(vectorsMat, n, n);
+    printf("\n");
+
+    return vectorsMat;
+}
+
+double ** spk(double ** inputMat, int k){
+    double ** wam, * ddg, * sqrtDdg, ** Lnorm, ** combinedEigen, ** eigenVectors, ** U, ** T;
+    double * eigenVals;
+    int K;
+    K = k;
+
+    wam = buildWam(inputMat);
+    ddg = buildDdg(wam);
+    sqrtDdg = buildDdgSqrt(ddg);
+    Lnorm = buildLnorm(wam, sqrtDdg);
+    combinedEigen = jacobiAlg(Lnorm);
+    eigenVals = separateValues(combinedEigen);
+    eigenVectors = separateVectors(combinedEigen);
+    if (k == 0){
+        K = eigenGapHeuristic(eigenVals);
+    }
+    U = extractKEigenVectors(eigenVectors, K);
+
+    T = renormalize(U, K);
+    printf("%s", "T in spk =");
+    printMat(T, n, K);
+    printf("\n");
+    return T;
+
+}
+
+double * ddg(double ** inputMat){
+    double ** wam, * ddg;
+    wam = buildWam(inputMat);
+    ddg = buildDdg(wam);
+    return ddg;
+}
+
+double ** lnorm(double ** inputMat){
+    double ** wam, * ddg, ** lnorm, * sqrtDdg;
+    wam = buildWam(inputMat);
+    ddg = buildDdg(wam);
+    sqrtDdg = buildDdgSqrt(ddg);
+    lnorm = buildLnorm(wam, sqrtDdg);
+    return lnorm;
+}
+
+double ** jacobi(double ** inputMat){
+    double ** combined, ** transposedJac;
+    combined = jacobiAlg(inputMat);
+    transposedJac = transpose(combined);
+    return transposedJac;
+}
+
+double ** transpose(double ** mat){
+    double ** transposedMat;
+    int i, j;
+    transposedMat = initMat(n + 1, n);
+    for (i = 0; i < n + 1; i++){
+        for (j = 0; j < n; j++){
+            if (i == 0){
+                transposedMat[i][j] = mat[i][j];
+            }
+            else{
+                transposedMat[j + 1][i - 1] = mat[i][j];
+            }
+        }
+    }
+
+    return transposedMat;
+}
 
 int main(int argc, char* argv[])
 {
     int k;
-    double ** vectors, ** wam, ** Lnorm, ** V;
-    double * ddg, * sqrtDdg;
-    char * fileName;
+    double ** inputMat;
+    char * fileName, * goal;
+    char first;
 
     assert(argc == 4 && inputMsg);
     k = atoi(argv[1]);
-    /** goal = argv[2]; **/
+    goal = argv[2];
     fileName = argv[3];
 
-    vectors = scanInput(fileName);
+    inputMat = scanInput(fileName);
 
     if (k >= n){
         printf(inputMsg);
         exit(-1);
     }
 
-    wam = buildWam(vectors);
-    ddg = buildDdg(wam);
-    sqrtDdg = buildDdgSqrt(ddg);
-    Lnorm = buildLnorm(wam, sqrtDdg);
-    V = jacobi(Lnorm);
+    first = goal[0];
 
-    /** printf("%s", "wam");
-    printf("\n");
-    printMat(wam);
-    printf("%s", "ddg");
-    printf("\n");
-    printDiagonal(ddg);
-    printf("%s", "sqrtddg");
-    printf("\n");
-    printDiagonal(sqrtDdg);
-    printf("%s", "Lnorm");
-    printf("\n");
-    printMat(Lnorm);
-    printf("%s", "V");
-    printf("\n");
-    printMat(V); **/
+    if (first == 's'){
+       spk(inputMat, k);
+    }
+    else if (first == 'w'){
+        printMat(buildWam(inputMat), n, n);
+    }
+    else if (first == 'd'){
+        printDiagonal(ddg(inputMat));
+    }
+    else if (first == 'l'){
+        printMat(lnorm(inputMat), n, n);
+    }
+    else if (first == 'j'){
+        printMat(jacobi(inputMat), n + 1, n);
+    }
+    else{
+        printf(inputMsg);
+        exit(-1);
+    }
 
-    freeAll(vectors, n);
-    freeAll(wam, n);
-    freeAll(Lnorm, n);
-    freeAll(V, n);
-    free(ddg);
-    free(sqrtDdg);
-
+    freeAll(inputMat, n);
 
     return 0;
 }
@@ -151,9 +254,9 @@ double ** scanInput(char * fileName) {
     maxD = 10;
 
     currVector = (double *) calloc(maxD , sizeof(double));
-    assert(currVector != NULL && "Error in allocating memory!");
+    assert(currVector != NULL && errorMsg);
     vectors = (double **) calloc(maxN, sizeof(double *));
-    assert(vectors != NULL && "Error in allocating memory!");
+    assert(vectors != NULL && errorMsg);
 
     inputFile = fopen(fileName, "r");
 
@@ -168,7 +271,7 @@ double ** scanInput(char * fileName) {
             vectors[index] = currVector;
             i = 0;
             currVector = (double *) calloc(d + 1, sizeof(double));
-            assert(currVector != NULL && "Error in allocating memory!");
+            assert(currVector != NULL && errorMsg);
             index += 1;
         }
     }
@@ -177,7 +280,16 @@ double ** scanInput(char * fileName) {
     D = d + 1;
     n = index + 1;
 
+    printf("%s", "n =");
+    printf("%d", n);
+    printf("\n");
+    printf("%s", "d =");
+    printf("%d", D);
+    printf("\n");
+
     fclose(inputFile);
+
+    printMat(vectors, n, D);
 
     return vectors;
 
@@ -323,71 +435,72 @@ void IReduce(double ** mat){
     }
 }
 
-double ** jacobi(double ** Lnorm){
+double ** jacobiAlg(double ** Lnorm){
 
-    double ** A, ** curA, ** P, ** V;
+    double ** A, ** curA, ** P, ** V, ** eigenRes, * eigenValues;
     double theta, t, c, s;
     int maxI, maxJ, * maxInd, ind, isConvergence;
 
-    A = initMat();
-    curA = initMat();
-    V = initMat();
+    A = initMat(n, n);
+    curA = initMat(n, n);
+    V = initMat(n, n);
     P = initIdentityMat();
 
     copyMat(Lnorm, A);
     ind = 0;
     isConvergence = 1;
-    printf("%d", isConvergence);
 
     while (ind < 100 && isConvergence){
-        printf("%s", "iter =");
-        printf("%d", ind);
-        printf("\n");
 
         maxInd = findMaxAbsValInd(A);
         maxI = maxInd[0];
         maxJ = maxInd[1];
 
-        printf("%s", "i =");
+        /** printf("%s", "i =");
         printf("%d", maxI);
-        printf("\n");
+        printf("\n"); **/
 
-        printf("%s", "j =");
+        /** printf("%s", "j =");
         printf("%d", maxJ);
-        printf("\n");
+        printf("\n");**/
 
         theta = calcTheta(A[maxJ][maxJ], A[maxI][maxI], A[maxI][maxJ]);
-        printf("%s", "theta =");
+        /** printf("%s", "theta =");
         printf("%f", theta);
-        printf("\n");
+        printf("\n");**/
 
         t = calcT(theta);
-        printf("%s", "t =");
+        /** printf("%s", "t =");
         printf("%f", t);
-        printf("\n");
+        printf("\n");**/
 
         c = calcC(t);
-        printf("%s", "c =");
+        /** printf("%s", "c =");
         printf("%f", c);
-        printf("\n");
+        printf("\n");**/
 
         s = t * c;
-        printf("%s", "s =");
+        /** printf("%s", "s =");
         printf("%f", s);
-        printf("\n");
+        printf("\n");**/
 
         buildRotationMat(P, maxI, maxJ, c, s);
-        printf("%s", "P =");
+       /**  printf("%s", "P =");
         printMat(P);
-        printf("\n");
+        printf("\n");**/
 
         buildCurA(curA, A, maxI, maxJ, c, s);
-        printf("%s", "curA =");
+       /**  printf("%s", "curA =");
         printMat(curA);
-        printf("\n");
+        printf("\n");**/
 
         isConvergence = convergence(A, curA);
+        /** if (!isConvergence){
+            continue;
+        } **/
+
         copyMat(curA, A);
+
         if (ind == 0){
             copyMat(P, V);
         }
@@ -397,13 +510,45 @@ double ** jacobi(double ** Lnorm){
         returnToIdentity(P, maxI, maxJ);
 
         ind += 1;
+
     }
 
-    printf("%s", "V =");
-    printMat(V);
+    printf("%s", "last iter =");
+    printf("%d", ind);
     printf("\n");
 
-    return V;
+    printf("%s", "V =");
+    printMat(V, n, n);
+    printf("\n");
+
+    eigenValues = extractEigenValues(A);
+    eigenRes = combineAllEigen(V, eigenValues);
+
+
+
+    return eigenRes;
+}
+
+double ** combineAllEigen(double ** mat, double * vector){
+    double ** combinedMat;
+    int i, j;
+
+    combinedMat = initMat(n + 1, n);
+
+    for (i = 0; i < n + 1; i++){
+        for (j = 0; j < n; j++){
+            if (i == 0){
+                combinedMat[i][j] = vector[j];
+            }
+            else{
+                combinedMat[i][j] = mat[i - 1][j];
+            }
+        }
+    }
+    printf("%s", "combined from jacobi algo =");
+    printMat(combinedMat, n + 1, n);
+    printf("\n");
+    return combinedMat;
 }
 
 int * findMaxAbsValInd(double ** A){
@@ -423,9 +568,9 @@ int * findMaxAbsValInd(double ** A){
             }
         }
     }
-    printf("%s", "max =");
+    /** printf("%s", "max =");
     printf("%f", maxAbs);
-    printf("\n");
+    printf("\n"); **/
 
     return maxInd;
 }
@@ -464,14 +609,14 @@ void buildRotationMat(double ** mat, int i, int j, double c, double s){
     mat[j][i] = -s;
 }
 
-double ** initMat(){
+double ** initMat(int r, int c){
     double ** mat;
     int i;
-    mat = (double **) calloc(n, sizeof(double *));
+    mat = (double **) calloc(r, sizeof(double *));
     assert(mat != NULL && "Error in allocating memory!");
 
-    for (i = 0; i < n; i++){
-        mat[i] = (double *) calloc(n , sizeof(double));
+    for (i = 0; i < r; i++){
+        mat[i] = (double *) calloc(c , sizeof(double));
         assert(mat[i] != NULL && "Error in allocating memory!");
     }
 
@@ -481,7 +626,7 @@ double ** initMat(){
 double ** initIdentityMat(){
     double ** mat;
     int i;
-    mat = initMat();
+    mat = initMat(n, n);
     for (i = 0; i < n; i++){
         mat[i][i] = 1;
     }
@@ -500,9 +645,9 @@ void buildCurA(double ** curA, double ** A, int i, int j, double c, double s){
     double tmp;
 
 
-    printf("%s", "A");
+    /** printf("%s", "A");
     printMat(A);
-    printf("\n");
+    printf("\n"); **/
 
     copyMat(A, curA);
 
@@ -531,7 +676,7 @@ void buildCurA(double ** curA, double ** A, int i, int j, double c, double s){
 void calcV(double ** V, int i, int j, double c, double s){
     int l;
     double ** tmpV;
-    tmpV = initMat();
+    tmpV = initMat(n, n);
     copyMat(V, tmpV);
     for (l = 0; l < n; l++){
         tmpV[l][i] = (c * V[l][i]) - (s * V[l][j]);
@@ -552,7 +697,7 @@ void copyMat(double ** orig, double ** dst){
 
 int convergence(double ** A, double ** curA){
     int i;
-    double resA, resCurA, diff, sumA, sumCurA;
+    double resA, resCurA, sumA, sumCurA;
 
 
     resA = frobeniusNormCalc(A);
@@ -567,11 +712,6 @@ int convergence(double ** A, double ** curA){
 
     resA = resA - sumA;
     resCurA = resCurA - sumCurA;
-
-    diff = resA - resCurA;
-    printf("%s", "diff =");
-    printf("%f", diff);
-    printf("\n");
 
     if (resA - resCurA <= epsilon){
         return 0;
@@ -598,7 +738,7 @@ double * extractEigenValues(double ** mat){
     double * eigenValues;
     int i;
     eigenValues = (double *) calloc(n , sizeof(double));
-    assert(eigenValues != NULL && "Error in allocating memory!");
+    assert(eigenValues != NULL && errorMsg);
 
     for (i = 0; i < n; i++){
         eigenValues[i] = mat[i][i];
@@ -625,18 +765,17 @@ void bubbleSort(double * vector)
 }
 
 
-int eigengapHeuristic(double ** A){
-    double * eigenValuesVector;
+int eigenGapHeuristic(double * eigenValuesVector){
     double delta, maxDelta;
     int k, i;
-    eigenValuesVector = extractEigenValues(A);
+
     bubbleSort(eigenValuesVector);
 
     maxDelta = fabs(eigenValuesVector[0] - eigenValuesVector[1]);
     k = 1;
 
     for (i = 1; i < n/2 ; i++){
-        delta = fabs(eigenValuesVector[1] - eigenValuesVector[2]);
+        delta = fabs(eigenValuesVector[i] - eigenValuesVector[i + 1]);
         if (delta > maxDelta){
             k = i + 1;
             maxDelta = delta;
@@ -650,45 +789,30 @@ double ** extractKEigenVectors(double ** V, int k){
     double ** U;
     int i, j;
 
-    U = (double **) calloc(n, sizeof(double *));
-    assert(U != NULL && "Error in allocating memory!");
-
-    for (i = 0; i < n; i++){
-        U[i] = (double *) calloc(k , sizeof(double));
-        assert(U[i] != NULL && "Error in allocating memory!");
-    }
+    U = initMat(n, k);
 
     for (i = 0; i < n; i++){
         for (j = 0; j < k; j++){
             U[i][j] = V[i][j];
         }
     }
+    printf("%s", "U =");
+    printMat(U, n, k);
+    printf("\n");
 
     return U;
 }
 
 double ** renormalize(double ** U, int k){
-    double * curVector;
     double curNorm;
     double ** T;
     int i, j;
 
-    T = (double **) calloc(n, sizeof(double *));
-    assert(T != NULL && "Error in allocating memory!");
+    T = initMat(n, k);
+
 
     for (i = 0; i < n; i++){
-        T[i] = (double *) calloc(k , sizeof(double));
-        assert(T[i] != NULL && "Error in allocating memory!");
-    }
-
-    curVector = (double *) calloc(n , sizeof(double));
-    assert(curVector != NULL && "Error in allocating memory!");
-
-    for (i = 0; i < n; i++){
-        for (j = 0; j < k; j++){
-            curVector[j] = U[i][j];
-        }
-        curNorm = calcNorm(curVector);
+        curNorm = calcNorm(U[i], k);
         for (j = 0; j < k; j++){
             T[i][j] =  U[i][j]/curNorm;
         }
@@ -697,13 +821,13 @@ double ** renormalize(double ** U, int k){
     return T;
 }
 
-double calcNorm(double * vector){
+double calcNorm(double * vector, int k){
     double res;
     int i;
 
     res = 0;
 
-    for (i = 0; i < n; i++){
+    for (i = 0; i < k; i++){
         res += pow(vector[i], 2);
     }
 
