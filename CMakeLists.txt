@@ -3,4 +3,4 @@ project(spkmeans C)
 
 set(CMAKE_C_STANDARD 90)
 
-add_library(spkmeans spkmeans.c spkmeans.h main.c main.h)
+add_library(spkmeans spkmeans.c spkmeans.h main.c main.h kmeans.h kmeans.h)

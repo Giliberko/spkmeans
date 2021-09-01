@@ -38,14 +38,14 @@ static double frobeniusNormCalc(double ** mat);
 static int convergence(double ** A, double ** curA);
 static double * extractEigenValues(double ** mat);
 static void swap(double *xp, double *yp);
-static void bubbleSort(double * vector);
+static void bubbleSort(double * vector, int * indices) ;
 static double calcNorm(double * vector, int k);
 static double ** renormalize(double ** U, int k);
 static double ** combineAllEigen(double ** mat, double * vector);
 static double ** separateVectors(double ** combined);
 static double * separateValues(double ** combined);
-static int eigenGapHeuristic(double * eigenValuesVector);
-static double ** extractKEigenVectors(double ** V, int k);
+static int eigenGapHeuristic(double * eigenValuesVector, int * indices);
+static double ** extractKEigenVectors(double ** V, int * indices, int k);
 static double * ddg(double ** inputMat);
 static double ** transpose(double ** mat);
 static double ** jacobi(double ** inputMat);
@@ -132,7 +132,7 @@ double ** separateVectors(double ** combined){
 double ** spk(double ** inputMat, int k){
     double ** wam, * ddg, * sqrtDdg, ** Lnorm, ** combinedEigen, ** eigenVectors, ** U, ** T;
     double * eigenVals;
-    int K;
+    int K, i, * indices;
     K = k;
 
     wam = buildWam(inputMat);
@@ -142,10 +142,20 @@ double ** spk(double ** inputMat, int k){
     combinedEigen = jacobiAlg(Lnorm);
     eigenVals = separateValues(combinedEigen);
     eigenVectors = separateVectors(combinedEigen);
-    if (k == 0){
-        K = eigenGapHeuristic(eigenVals);
+
+    indices= (int *) calloc(n , sizeof(int));
+    assert(indices != NULL && errorMsg);
+
+    for (i = 0; i < n; i++){
+        indices[i] = i;
     }
-    U = extractKEigenVectors(eigenVectors, K);
+    if (k == 0){
+        K = eigenGapHeuristic(eigenVals, indices);
+    }
+    else{
+        eigenGapHeuristic(eigenVals, indices);
+    }
+    U = extractKEigenVectors(eigenVectors, indices, K);
 
     T = renormalize(U, K);
     printf("%s", "T in spk =");
@@ -755,21 +765,27 @@ void swap(double *xp, double *yp)
 }
 
 
-void bubbleSort(double * vector)
-{
-    int i, j;
-    for (i = 0; i < n-1; i++)
-        for (j = 0; j < n-i-1; j++)
-            if (vector[j] > vector[j+1])
-                swap(&vector[j], &vector[j+1]);
+void bubbleSort(double * vector, int * indices) {
+    int i, j, temp;
+
+    for (i = 0; i < n - 1; i++){
+        for (j = 0; j < n - i - 1; j++){
+            if (vector[j] > vector[j + 1]){
+                swap(&vector[j], &vector[j + 1]);
+                temp = indices[j];
+                indices[j] = indices[j + 1];
+                indices[j + 1] = temp;
+            }
+        }
+    }
 }
 
 
-int eigenGapHeuristic(double * eigenValuesVector){
+int eigenGapHeuristic(double * eigenValuesVector, int * indices){
     double delta, maxDelta;
     int k, i;
 
-    bubbleSort(eigenValuesVector);
+    bubbleSort(eigenValuesVector, indices);
 
     maxDelta = fabs(eigenValuesVector[0] - eigenValuesVector[1]);
     k = 1;
@@ -785,7 +801,7 @@ int eigenGapHeuristic(double * eigenValuesVector){
     return k;
 }
 
-double ** extractKEigenVectors(double ** V, int k){
+double ** extractKEigenVectors(double ** V, int * indices, int k){
     double ** U;
     int i, j;
 
@@ -793,7 +809,7 @@ double ** extractKEigenVectors(double ** V, int k){
 
     for (i = 0; i < n; i++){
         for (j = 0; j < k; j++){
-            U[i][j] = V[i][j];
+            U[i][j] = V[i][indices[j]];
         }
     }
     printf("%s", "U =");
