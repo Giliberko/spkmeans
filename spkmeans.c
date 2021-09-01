@@ -49,6 +49,12 @@ static double ** extractKEigenVectors(double ** V, int * indices, int k);
 static double * ddg(double ** inputMat);
 static double ** transpose(double ** mat);
 static double ** jacobi(double ** inputMat);
+static void addVectorToCluster(const double* vector, double** clustersSum, int* clustersSize, int index, int k);
+static void clustering(double ** vectors, double ** centroids, double ** clustersSum, int* clustersSize, int k);
+static void avgCalc(double ** clustersSum, const int * clustersSize, int index, double * newCent, int k);
+static void updateCentroid(int k, double ** clustersSum, int * clustersSize, double ** curCentroids);
+static int diff(int k, double ** curCentroids, double ** centroids);
+static void kmean(double ** vectors, int k);
 
 
 int n, D;
@@ -158,9 +164,16 @@ double ** spk(double ** inputMat, int k){
     U = extractKEigenVectors(eigenVectors, indices, K);
 
     T = renormalize(U, K);
-    printf("%s", "T in spk =");
+    printf("%s", "T =");
     printMat(T, n, K);
     printf("\n");
+
+    printf("%s", "kmeans =");
+    printf("\n");
+    kmean(T, K);
+    printf("\n");
+
+
     return T;
 
 }
@@ -849,4 +862,145 @@ double calcNorm(double * vector, int k){
 
     return sqrt(res);
 }
+
+/** adding vector to the right cluster - increase cluster size and sum accordingly **/
+void addVectorToCluster(const double* vector, double** clustersSum, int* clustersSize, int index, int k){
+    int i, j;
+    if (clustersSize[index] == 0){
+        for (j = 0; j < k; j++){
+            clustersSum[index][j] = vector[j];
+        }
+    }
+    else{
+        for (i = 0; i < k; i++){
+            clustersSum[index][i] += vector[i];
+        }
+    }
+    clustersSize[index] += 1;
+}
+
+/** assigning each vector to the closest cluster **/
+void clustering(double ** vectors, double ** centroids, double ** clustersSum, int* clustersSize, int k){
+    double *currVector;
+    int i, j, l, p, isFirst,clusterIndex ;
+    double currSum, minDis;
+    currVector=(double *) calloc(k , sizeof (double));
+    assert(currVector != NULL && "Error in allocating memory!");
+    for (i = 0; i < n ; i++){
+        for (p = 0; p < k; p++){
+            currVector[p] = vectors[i][p];
+        }
+        isFirst = 1;
+        minDis = 0;
+        clusterIndex = 0;
+        for (j = 0; j < k; j++){
+            currSum = 0;
+            for (l = 0; l < k; l++){
+                currSum += ((currVector[l] - centroids[j][l]) * (currVector[l] - centroids[j][l]));
+            }
+            if (isFirst | (currSum < minDis)){
+                minDis = currSum;
+                clusterIndex = j;
+                isFirst = 0;
+            }
+        }
+        addVectorToCluster(currVector, clustersSum, clustersSize, clusterIndex, k);
+    }
+
+    free(currVector);
+}
+
+/** calculating centroids - avg of all clusters' vectors **/
+void avgCalc(double ** clustersSum, const int * clustersSize, int index, double * newCent, int k){
+    int i;
+    for(i = 0; i < k; i++){
+        newCent[i] = ((clustersSum[index][i])/((double)clustersSize[index]));
+    }
+}
+
+/** update all centroids according to the assigned clusters **/
+void updateCentroid(int k, double ** clustersSum, int * clustersSize, double ** curCentroids ) {
+    int i, j;
+    double * avg;
+    avg = (double *) calloc(k, sizeof (double));
+    assert(avg != NULL && "Error in allocating memory!");
+    for (i = 0; i < k; i++) {
+        avgCalc(clustersSum, clustersSize, i, avg, k);
+        for (j = 0; j < k; j++) {
+            curCentroids[i][j] = avg[j];
+        }
+        /** zero current cluster **/
+        clustersSize[i] = 0;
+    }
+
+    free(avg);
+}
+
+/** check if centroids have changed during the past iteration **/
+int diff(int k, double ** curCentroids, double ** centroids){
+    int i, j;
+    for (i = 0; i < k; i++){
+        for (j = 0; j < k; j++){
+            if (centroids[i][j] != curCentroids[i][j]){
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+/** main function of the kmeans algorithm **/
+void kmean(double ** vectors, int k) {
+    double ** centroids;
+    double ** clustersSum;
+    int * clustersSize;
+    double ** curCentroids;
+    int i, j, p, t, m, counter, isChanged;
+    clustersSum = (double **) calloc(k , sizeof (double *));
+    assert(clustersSum != NULL && "Error in allocating memory!");
+    clustersSize = (int*) calloc(k, sizeof (int));
+    assert(clustersSize != NULL && "Error in allocating memory!");
+    curCentroids=(double **) calloc(k , sizeof (double*));
+    assert(curCentroids != NULL && "Error in allocating memory!");
+    centroids = (double **) calloc(k , sizeof(double *));
+    assert(centroids != NULL && "Error in allocating memory!");
+
+    counter = 0;
+    isChanged = 1;
+
+    for (p = 0; p < k; p++){
+        centroids[p] = (double *) calloc(k, sizeof(double ));
+        curCentroids[p] = (double *) calloc(k, sizeof(double ));
+        clustersSum[p] = (double *) calloc(k, sizeof(double ));
+    }
+    /** initializing centroids with first k vectors **/
+    for (i = 0; i < k; i++){
+        for (j = 0; j < k; j++){
+            centroids[i][j] = vectors[i][j];
+        }
+    }
+
+    /** loop until convergence **/
+    while ((counter < 300) && isChanged){
+        clustering(vectors, centroids, clustersSum, clustersSize, k);
+        updateCentroid(k, clustersSum, clustersSize, curCentroids);
+        isChanged = diff(k, curCentroids, centroids);
+        for (t = 0; t < k; t++){
+            for (m = 0; m < k; m++){
+                centroids[t][m] = curCentroids[t][m]; /** update centroids **/
+            }
+        }
+
+        counter += 1;
+    }
+    printMat(centroids, k, k);
+    /** free all in use memory **/
+    free(clustersSize);
+    freeAll(centroids, k);s
+    freeAll(clustersSum, k);
+    freeAll(curCentroids, k);
+}
+
+
+
 
