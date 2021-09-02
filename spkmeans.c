@@ -7,54 +7,58 @@
 #include <ctype.h>
 
 #define epsilon 1.0e-15
-#define errorMsg "An Error Has Occured" /** TODO: replace all error msgs with this **/
+#define errorMsg "An Error Has Occured"
 #define inputMsg "Invalid Input!"
 
-static double ** scanInput(char * fileName);
-static double ** buildWam(double ** vectors);
-static double euclideanNormCalc (double * first, double * second);
-static double weightCalc (double res);
-static void printMat(double ** mat, int r, int c);
-static void freeAll(double ** array, int k);
-static double * buildDdg(double ** vectors);
-static void printDiagonal(double * diag);
-static double * buildDdgSqrt(double * ddg);
-static void multiplyDiag(double ** res, double ** mat, double * diag, int flag);
-static void IReduce(double ** mat);
-static double ** buildLnorm(double ** wam, double * sqrtDdg);
-static int * findMaxAbsValInd(double ** A);
-static double calcTheta(double Ajj, double Aii, double Aij);
-static double calcT(double theta);
-static double calcC(double t);
-static double ** initMat(int r, int c);
-static void buildRotationMat(double ** mat, int i, int j, double c, double s);
-static void buildCurA(double ** curA, double ** A, int i, int j, double c, double s);
-static void copyMat(double ** orig, double ** dst);
-static void calcV(double ** V, int i, int j, double c, double s);
-static double ** initIdentityMat();
-static void returnToIdentity(double ** P, int i, int j);
-static double ** jacobiAlg(double ** Lnorm);
-static double frobeniusNormCalc(double ** mat);
-static int convergence(double ** A, double ** curA);
-static double * extractEigenValues(double ** mat);
-static void swap(double *xp, double *yp);
-static void bubbleSort(double * vector, int * indices) ;
-static double calcNorm(double * vector, int k);
-static double ** renormalize(double ** U, int k);
-static double ** combineAllEigen(double ** mat, double * vector);
-static double ** separateVectors(double ** combined);
-static double * separateValues(double ** combined);
-static int eigenGapHeuristic(double * eigenValuesVector, int * indices);
-static double ** extractKEigenVectors(double ** V, int * indices, int k);
-static double * ddg(double ** inputMat);
-static double ** transpose(double ** mat);
-static double ** jacobi(double ** inputMat);
-static void addVectorToCluster(const double* vector, double** clustersSum, int* clustersSize, int index, int k);
-static void clustering(double ** vectors, double ** centroids, double ** clustersSum, int* clustersSize, int k);
-static void avgCalc(double ** clustersSum, const int * clustersSize, int index, double * newCent, int k);
-static void updateCentroid(int k, double ** clustersSum, int * clustersSize, double ** curCentroids);
-static int diff(int k, double ** curCentroids, double ** centroids);
-static void kmean(double ** vectors, int k);
+double ** scanInput(char * fileName);
+double ** buildWam(double ** vectors);
+double euclideanNormCalc (double * first, double * second);
+double weightCalc (double res);
+void printMat(double ** mat, int r, int c);
+void freeAll(double ** array, int k);
+double * buildDdg(double ** vectors);
+void printDiagonal(double * diag);
+double * buildDdgSqrt(double * ddg);
+void multiplyDiag(double ** res, double ** mat, double * diag, int flag);
+void IReduce(double ** mat);
+double ** buildLnorm(double ** wam, double * sqrtDdg);
+int * findMaxAbsValInd(double ** A);
+double calcTheta(double Ajj, double Aii, double Aij);
+double calcT(double theta);
+double calcC(double t);
+double ** initMat(int r, int c);
+void buildRotationMat(double ** mat, int i, int j, double c, double s);
+void buildCurA(double ** curA, double ** A, int i, int j, double c, double s);
+void copyMat(double ** orig, double ** dst);
+void calcV(double ** V, int i, int j, double c, double s);
+double ** initIdentityMat();
+void returnToIdentity(double ** P, int i, int j);
+double ** jacobiAlg(double ** Lnorm);
+/**double frobeniusNormCalc(double ** mat);**/
+int convergence(double ** A, int i, int j);
+double * extractEigenValues(double ** mat);
+void swap(double *xp, double *yp);
+void bubbleSort(double * vector, int * indices) ;
+double calcNorm(double * vector, int k);
+double ** renormalize(double ** U, int k);
+double ** combineAllEigen(double ** mat, double * vector);
+double ** separateVectors(double ** combined);
+double * separateValues(double ** combined);
+int eigenGapHeuristic(double * eigenValuesVector, int * indices);
+double ** extractKEigenVectors(double ** V, int * indices, int k);
+void ddg(double ** inputMat);
+double ** transpose(double ** mat);
+void jacobi(double ** inputMat);
+void addVectorToCluster(const double* vector, double** clustersSum, int* clustersSize, int index, int k);
+void clustering(double ** vectors, double ** centroids, double ** clustersSum, int* clustersSize, int k);
+void avgCalc(double ** clustersSum, const int * clustersSize, int index, double * newCent, int k);
+void updateCentroid(int k, double ** clustersSum, int * clustersSize, double ** curCentroids);
+int diff(int k, double ** curCentroids, double ** centroids);
+double ** kmeans(double ** vectors, int k, int isPlus);
+void spk(double ** inputMat, int kInput, int src);
+void mainProgram(double ** inputMat, int k, char goal, int src);
+void wam(double ** inputMat);
+void lnorm(double ** inputMat);
 
 
 int n, D;
@@ -135,11 +139,11 @@ double ** separateVectors(double ** combined){
     return vectorsMat;
 }
 
-double ** spk(double ** inputMat, int k){
-    double ** wam, * ddg, * sqrtDdg, ** Lnorm, ** combinedEigen, ** eigenVectors, ** U, ** T;
+void spk(double ** inputMat, int kInput, int src){
+    double ** wam, * ddg, * sqrtDdg, ** Lnorm, ** combinedEigen, ** eigenVectors, ** U, ** T, ** centroids;
     double * eigenVals;
-    int K, i, * indices;
-    K = k;
+    int k, i, * indices;
+    k = kInput;
 
     wam = buildWam(inputMat);
     ddg = buildDdg(wam);
@@ -156,49 +160,77 @@ double ** spk(double ** inputMat, int k){
         indices[i] = i;
     }
     if (k == 0){
-        K = eigenGapHeuristic(eigenVals, indices);
+        k = eigenGapHeuristic(eigenVals, indices);
     }
     else{
         eigenGapHeuristic(eigenVals, indices);
     }
-    U = extractKEigenVectors(eigenVectors, indices, K);
+    U = extractKEigenVectors(eigenVectors, indices, k);
 
-    T = renormalize(U, K);
-    printf("%s", "T =");
-    printMat(T, n, K);
-    printf("\n");
+    T = renormalize(U, k);
+    /** printf("%s", "T =");
+    printMat(T, n, k);
+    printf("\n"); **/
 
-    printf("%s", "kmeans =");
-    printf("\n");
-    kmean(T, K);
-    printf("\n");
+    centroids = kmeans(T, k, src);
 
+    if (src){
+       /** TODO: add python logic! **/
+    }
 
-    return T;
+    else{
+        printMat(centroids, k, k);
+    }
+
+    freeAll(wam, n);
+    free(ddg);
+    free(sqrtDdg);
+    freeAll(Lnorm, n);
+    freeAll(combinedEigen, n+1);
+    free(eigenVals);
+    freeAll(eigenVectors, n);
+    freeAll(U, n);
+    freeAll(T, n);
+    free(indices);
+    freeAll(centroids, k);
 
 }
 
-double * ddg(double ** inputMat){
+void ddg(double ** inputMat){
     double ** wam, * ddg;
     wam = buildWam(inputMat);
     ddg = buildDdg(wam);
-    return ddg;
+
+    printDiagonal(ddg);
+
+    freeAll(wam, n);
+    free(ddg);
 }
 
-double ** lnorm(double ** inputMat){
+void lnorm(double ** inputMat){
     double ** wam, * ddg, ** lnorm, * sqrtDdg;
     wam = buildWam(inputMat);
     ddg = buildDdg(wam);
     sqrtDdg = buildDdgSqrt(ddg);
     lnorm = buildLnorm(wam, sqrtDdg);
-    return lnorm;
+
+    printMat(lnorm, n, n);
+
+    freeAll(wam, n);
+    free(ddg);
+    free(sqrtDdg);
+    freeAll(lnorm, n);
 }
 
-double ** jacobi(double ** inputMat){
+void jacobi(double ** inputMat){
     double ** combined, ** transposedJac;
     combined = jacobiAlg(inputMat);
     transposedJac = transpose(combined);
-    return transposedJac;
+
+    printMat(transposedJac, n + 1, n);
+
+    freeAll(combined, n + 1);
+    freeAll(transposedJac, n + 1);
 }
 
 double ** transpose(double ** mat){
@@ -240,29 +272,35 @@ int main(int argc, char* argv[])
 
     first = goal[0];
 
-    if (first == 's'){
-       spk(inputMat, k);
+    mainProgram(inputMat, k, first, 0);
+
+    return 0;
+}
+
+void mainProgram(double ** inputMat, int k, char goal, int src){
+
+    if (goal == 's'){
+    spk(inputMat, k, src);
     }
-    else if (first == 'w'){
-        printMat(buildWam(inputMat), n, n);
+    else if (goal == 'w'){
+    wam(inputMat);
     }
-    else if (first == 'd'){
-        printDiagonal(ddg(inputMat));
+    else if (goal == 'd'){
+    ddg(inputMat);
     }
-    else if (first == 'l'){
-        printMat(lnorm(inputMat), n, n);
+    else if (goal == 'l'){
+    lnorm(inputMat);
     }
-    else if (first == 'j'){
-        printMat(jacobi(inputMat), n + 1, n);
+    else if (goal == 'j'){
+    jacobi(inputMat);
     }
     else{
-        printf(inputMsg);
-        exit(-1);
+    printf(inputMsg);
+    exit(-1);
     }
 
     freeAll(inputMat, n);
 
-    return 0;
 }
 
 /** parsing input into an array of vectors **/
@@ -312,7 +350,7 @@ double ** scanInput(char * fileName) {
 
     fclose(inputFile);
 
-    printMat(vectors, n, D);
+    /** printMat(vectors, n, D); **/
 
     return vectors;
 
@@ -338,19 +376,20 @@ double weightCalc (double res){
     return weight;
 }
 
+void wam(double ** inputMat){
+    double ** wam;
+    wam = buildWam(inputMat);
+    printMat(wam, n, n);
+    freeAll(wam, n);
+}
+
 double ** buildWam(double ** vectors) {
     double ** wam;
     double * first, * second;
     int i, j;
     double res, weight;
 
-    wam = (double **) calloc(n, sizeof(double *));
-    assert(wam != NULL && "Error in allocating memory!");
-
-    for (i = 0; i < n; i++){
-        wam[i] = (double *) calloc(n , sizeof(double));
-        assert(wam[i] != NULL && "Error in allocating memory!");
-    }
+    wam = initMat(n, n);
 
     for (i = 0; i < n - 1; i++){
         for (j = i + 1; j < n; j++){
@@ -381,7 +420,7 @@ double * buildDdg(double ** wam) {
     int i;
 
     ddg = (double *) calloc(n, sizeof(double));
-    assert(ddg != NULL && "Error in allocating memory!");
+    assert(ddg != NULL && errorMsg);
 
     for (i = 0; i < n; i++){
         ddg[i] = sumRow(wam[i]);
@@ -394,7 +433,7 @@ double * buildDdgSqrt(double * ddg){
     int i;
 
     sqrtDdg = (double *) calloc(n, sizeof(double));
-    assert(sqrtDdg != NULL && "Error in allocating memory!");
+    assert(sqrtDdg != NULL && errorMsg);
 
     for (i = 0; i < n; i++){
         sqrtDdg[i] = 1 / sqrt(ddg[i]);
@@ -404,14 +443,7 @@ double * buildDdgSqrt(double * ddg){
 
 double ** buildLnorm(double ** wam, double * sqrtDdg){
     double ** Lnorm;
-    int i;
-    Lnorm = (double **) calloc(n, sizeof(double *));
-    assert(Lnorm != NULL && "Error in allocating memory!");
-
-    for (i = 0; i < n; i++){
-        Lnorm[i] = (double *) calloc(n , sizeof(double));
-        assert(Lnorm[i] != NULL && "Error in allocating memory!");
-    }
+    Lnorm = initMat(n, n);
 
     multiplyDiag(Lnorm, wam, sqrtDdg, 1);
     multiplyDiag(Lnorm, Lnorm, sqrtDdg, 0);
@@ -517,7 +549,7 @@ double ** jacobiAlg(double ** Lnorm){
         printMat(curA);
         printf("\n");**/
 
-        isConvergence = convergence(A, curA);
+        isConvergence = convergence(A, maxI, maxJ);
         /** if (!isConvergence){
             continue;
         } **/
@@ -547,7 +579,12 @@ double ** jacobiAlg(double ** Lnorm){
     eigenValues = extractEigenValues(A);
     eigenRes = combineAllEigen(V, eigenValues);
 
-
+    freeAll(A, n);
+    freeAll(curA, n);
+    freeAll(V, n);
+    freeAll(P, n);
+    free(eigenValues);
+    free(maxInd);
 
     return eigenRes;
 }
@@ -636,11 +673,11 @@ double ** initMat(int r, int c){
     double ** mat;
     int i;
     mat = (double **) calloc(r, sizeof(double *));
-    assert(mat != NULL && "Error in allocating memory!");
+    assert(mat != NULL && errorMsg);
 
     for (i = 0; i < r; i++){
         mat[i] = (double *) calloc(c , sizeof(double));
-        assert(mat[i] != NULL && "Error in allocating memory!");
+        assert(mat[i] != NULL && errorMsg);
     }
 
     return mat;
@@ -718,10 +755,10 @@ void copyMat(double ** orig, double ** dst){
     }
 }
 
-int convergence(double ** A, double ** curA){
-    int i;
-    double resA, resCurA, sumA, sumCurA;
+int convergence(double ** A, int i, int j){
 
+   /**double resA, resCurA, sumA, sumCurA;
+   int i;
 
     resA = frobeniusNormCalc(A);
     resCurA = frobeniusNormCalc(curA);
@@ -741,7 +778,16 @@ int convergence(double ** A, double ** curA){
     }
     else{
         return 1;
+    } **/
+
+    double offDiff;
+
+    offDiff = 2 * pow(A[i][j], 2);
+
+    if (offDiff <= epsilon){
+        return 0;
     }
+    return 1;
 }
 
 double frobeniusNormCalc(double ** mat){
@@ -885,7 +931,7 @@ void clustering(double ** vectors, double ** centroids, double ** clustersSum, i
     int i, j, l, p, isFirst,clusterIndex ;
     double currSum, minDis;
     currVector=(double *) calloc(k , sizeof (double));
-    assert(currVector != NULL && "Error in allocating memory!");
+    assert(currVector != NULL && errorMsg);
     for (i = 0; i < n ; i++){
         for (p = 0; p < k; p++){
             currVector[p] = vectors[i][p];
@@ -923,7 +969,7 @@ void updateCentroid(int k, double ** clustersSum, int * clustersSize, double ** 
     int i, j;
     double * avg;
     avg = (double *) calloc(k, sizeof (double));
-    assert(avg != NULL && "Error in allocating memory!");
+    assert(avg != NULL && errorMsg);
     for (i = 0; i < k; i++) {
         avgCalc(clustersSum, clustersSize, i, avg, k);
         for (j = 0; j < k; j++) {
@@ -950,33 +996,28 @@ int diff(int k, double ** curCentroids, double ** centroids){
 }
 
 /** main function of the kmeans algorithm **/
-void kmean(double ** vectors, int k) {
+double ** kmeans(double ** vectors, int k, int isPlus) {
     double ** centroids;
     double ** clustersSum;
     int * clustersSize;
     double ** curCentroids;
-    int i, j, p, t, m, counter, isChanged;
-    clustersSum = (double **) calloc(k , sizeof (double *));
-    assert(clustersSum != NULL && "Error in allocating memory!");
+    int i, j, t, m, counter, isChanged;
+    clustersSum = initMat(k, k);
     clustersSize = (int*) calloc(k, sizeof (int));
-    assert(clustersSize != NULL && "Error in allocating memory!");
-    curCentroids=(double **) calloc(k , sizeof (double*));
-    assert(curCentroids != NULL && "Error in allocating memory!");
-    centroids = (double **) calloc(k , sizeof(double *));
-    assert(centroids != NULL && "Error in allocating memory!");
+    assert(clustersSize != NULL && errorMsg);
+    curCentroids = initMat(k, k);
 
     counter = 0;
     isChanged = 1;
 
-    for (p = 0; p < k; p++){
-        centroids[p] = (double *) calloc(k, sizeof(double ));
-        curCentroids[p] = (double *) calloc(k, sizeof(double ));
-        clustersSum[p] = (double *) calloc(k, sizeof(double ));
-    }
-    /** initializing centroids with first k vectors **/
-    for (i = 0; i < k; i++){
-        for (j = 0; j < k; j++){
-            centroids[i][j] = vectors[i][j];
+
+    if (!isPlus){
+        centroids = initMat(k, k);
+        /** initializing centroids with first k vectors **/
+        for (i = 0; i < k; i++){
+            for (j = 0; j < k; j++){
+                centroids[i][j] = vectors[i][j];
+            }
         }
     }
 
@@ -993,12 +1034,12 @@ void kmean(double ** vectors, int k) {
 
         counter += 1;
     }
-    printMat(centroids, k, k);
     /** free all in use memory **/
     free(clustersSize);
-    freeAll(centroids, k);s
     freeAll(clustersSum, k);
     freeAll(curCentroids, k);
+
+    return centroids;
 }
 
 
