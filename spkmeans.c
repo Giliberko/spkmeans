@@ -77,7 +77,12 @@ void printMat(double ** mat, int r, int c){
     int i, j;
     for (i = 0; i < r; i++){
         for (j = 0; j < c; j++){
-            printf("%.4f", mat[i][j]);
+            if (mat[i][j] < 0 && mat[i][j] > -0.00005){
+                printf("%.4f", 0.0000);
+            }
+            else {
+                printf("%.4f", mat[i][j]);
+            }
             if(j < (c-1)){
                 printf(",");
             }
@@ -470,18 +475,11 @@ void multiplyDiag(double ** res, double ** mat, double * diag, int flag){
 
 void IReduce(double ** mat){
     int i, j;
-    double cur;
 
     for (i = 0; i < n; i++){
         for (j = 0; j < n; j++){
             if (j != i){
-                cur = -mat[i][j];
-                if (cur < 0 && cur > -0.00005){
-                    mat[i][j] = 0.0000;
-                }
-                else {
-                    mat[i][j] = cur;
-                }
+                mat[i][j] = -mat[i][j];
             }
             else{
                 mat[i][j] = 1;
@@ -501,23 +499,39 @@ double ** jacobiAlg(double ** Lnorm){
     V = initMat(n, n);
     P = initIdentityMat();
 
+    printf("%s", "lnorm =");
+    printMat(Lnorm, n, n);
+    printf("\n");
+
     copyMat(Lnorm, A);
     ind = 0;
     isConvergence = 1;
 
+    printf("%s", "A =");
+    printMat(A, n, n);
+    printf("\n");
+
     while (ind < 100 && isConvergence){
+
+        printf("%s", "iter =");
+        printf("%d", ind);
+        printf("\n");
 
         maxInd = findMaxAbsValInd(A);
         maxI = maxInd[0];
         maxJ = maxInd[1];
 
-        /** printf("%s", "i =");
+        printf("%s", "i =");
         printf("%d", maxI);
-        printf("\n"); **/
+        printf("\n");
 
-        /** printf("%s", "j =");
+        printf("%s", "j =");
         printf("%d", maxJ);
-        printf("\n");**/
+        printf("\n");
+
+        printf("%s", "lnorm[i][j] =");
+        printf("%f", Lnorm[maxI][maxJ]);
+        printf("\n");
 
         theta = calcTheta(A[maxJ][maxJ], A[maxI][maxI], A[maxI][maxJ]);
         /** printf("%s", "theta =");
@@ -530,24 +544,24 @@ double ** jacobiAlg(double ** Lnorm){
         printf("\n");**/
 
         c = calcC(t);
-        /** printf("%s", "c =");
+        printf("%s", "c =");
         printf("%f", c);
-        printf("\n");**/
+        printf("\n");
 
         s = t * c;
-        /** printf("%s", "s =");
+        printf("%s", "s =");
         printf("%f", s);
-        printf("\n");**/
+        printf("\n");
 
         buildRotationMat(P, maxI, maxJ, c, s);
-       /**  printf("%s", "P =");
-        printMat(P);
-        printf("\n");**/
+        printf("%s", "P =");
+        printMat(P, n, n);
+        printf("\n");
 
         buildCurA(curA, A, maxI, maxJ, c, s);
-       /**  printf("%s", "curA =");
-        printMat(curA);
-        printf("\n");**/
+       printf("%s", "curA =");
+        printMat(curA, n, n);
+        printf("\n");
 
         isConvergence = convergence(A, maxI, maxJ);
         /** if (!isConvergence){
@@ -628,16 +642,16 @@ int * findMaxAbsValInd(double ** A){
             }
         }
     }
-    /** printf("%s", "max =");
+    printf("%s", "max =");
     printf("%f", maxAbs);
-    printf("\n"); **/
+    printf("\n");
 
     return maxInd;
 }
 
 double calcTheta(double Ajj, double Aii, double Aij){
     double theta;
-    theta = (Ajj - Aii) / (2 * Aij);
+    theta = (Ajj - Aii) / ((double) 2 * Aij);
 
     return theta;
 }
